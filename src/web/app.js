@@ -1,147 +1,13 @@
 const express = require('express');
 const path = require('path');
+require('dotenv').config();
+
+// Importa serviços
+const DattoApiService = require('../services/datto-api-service');
+const MockDatabase = require('../mock-client');
 const OrganizationService = require('../services/organization-service');
 const SyncService = require('../services/sync-service');
 const DatabaseService = require('../services/database-service');
-
-// Simula uma conexão de banco de dados
-class MockDatabase {
-  constructor() {
-    this.data = {
-      organizations: [
-        {
-          id: 1,
-          uid: 'org_1',
-          name: 'Empresa ABC Ltda',
-          slug: 'empresa-abc',
-          description: 'Empresa de tecnologia com múltiplos sites',
-          status: 'active',
-          is_active: true,
-          sync_enabled: true,
-          last_sync: new Date(),
-          total_devices: 45,
-          online_devices: 38,
-          offline_devices: 7,
-          total_sites: 8,
-          active_sites: 7,
-          total_alerts: 12,
-          critical_alerts: 3,
-          warning_alerts: 6,
-          info_alerts: 3
-        },
-        {
-          id: 2,
-          uid: 'org_2',
-          name: 'Consultoria XYZ',
-          slug: 'consultoria-xyz',
-          description: 'Consultoria em TI com foco em monitoramento',
-          status: 'active',
-          is_active: true,
-          sync_enabled: true,
-          last_sync: new Date(Date.now() - 3600000), // 1 hora atrás
-          total_devices: 23,
-          online_devices: 20,
-          offline_devices: 3,
-          total_sites: 4,
-          active_sites: 4,
-          total_alerts: 8,
-          critical_alerts: 1,
-          warning_alerts: 4,
-          info_alerts: 3
-        }
-      ],
-      devices: [
-        {
-          id: 1,
-          organization_id: 1,
-          uid: 'device_1',
-          name: 'Servidor Principal',
-          type: 'server',
-          status: 'online',
-          os: 'Windows Server 2019',
-          ip_address: '192.168.1.100',
-          site_name: 'Matriz'
-        },
-        {
-          id: 2,
-          organization_id: 1,
-          uid: 'device_2',
-          name: 'Workstation João',
-          type: 'workstation',
-          status: 'online',
-          os: 'Windows 11',
-          ip_address: '192.168.1.101',
-          site_name: 'Matriz'
-        },
-        {
-          id: 3,
-          organization_id: 2,
-          uid: 'device_3',
-          name: 'Servidor Backup',
-          type: 'server',
-          status: 'offline',
-          os: 'Linux Ubuntu',
-          ip_address: '10.0.0.50',
-          site_name: 'Filial'
-        }
-      ],
-      alerts: [
-        {
-          id: 1,
-          organization_id: 1,
-          uid: 'alert_1',
-          title: 'Disco cheio',
-          message: 'Disco C: com 95% de uso',
-          severity: 'critical',
-          status: 'active',
-          device_name: 'Servidor Principal',
-          site_name: 'Matriz',
-          created_at: new Date()
-        },
-        {
-          id: 2,
-          organization_id: 1,
-          uid: 'alert_2',
-          title: 'Memória alta',
-          message: 'Uso de memória em 85%',
-          severity: 'warning',
-          status: 'active',
-          device_name: 'Workstation João',
-          site_name: 'Matriz',
-          created_at: new Date()
-        },
-        {
-          id: 3,
-          organization_id: 2,
-          uid: 'alert_3',
-          title: 'Serviço parado',
-          message: 'Serviço de backup não está rodando',
-          severity: 'critical',
-          status: 'active',
-          device_name: 'Servidor Backup',
-          site_name: 'Filial',
-          created_at: new Date()
-        }
-      ]
-    };
-  }
-
-  async query(sql, params = []) {
-    // Simula consultas básicas
-    if (sql.includes('SELECT * FROM organizations')) {
-      return this.data.organizations;
-    }
-    if (sql.includes('SELECT * FROM devices WHERE organization_id')) {
-      const orgId = params[0];
-      return this.data.devices.filter(d => d.organization_id === orgId);
-    }
-    if (sql.includes('SELECT * FROM alerts WHERE organization_id')) {
-      const orgId = params[0];
-      return this.data.alerts.filter(a => a.organization_id === orgId);
-    }
-    return [];
-  }
-}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -156,16 +22,68 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Inicializa serviços
+const dattoApi = new DattoApiService();
 const database = new MockDatabase();
 const organizationService = new OrganizationService(database);
 const syncService = new SyncService(database);
 const dbService = new DatabaseService(database);
 
+// Testa conexão com Datto API
+async function testDattoConnection() {
+  try {
+    const isConnected = await dattoApi.testConnection();
+    if (isConnected) {
+      console.log('✅ Conectado com sucesso à API Datto RMM');
+    } else {
+      console.log('⚠️  Não foi possível conectar à API Datto RMM - usando dados simulados');
+    }
+  } catch (error) {
+    console.log('⚠️  Erro ao conectar com API Datto RMM - usando dados simulados');
+  }
+}
+
 // Rotas
 app.get('/', async (req, res) => {
   try {
-    const organizations = await organizationService.getOrganizations();
-    const globalStats = await dbService.getGlobalStats();
+    let organizations = [];
+    let globalStats = {};
+
+    // Tenta obter dados reais da Datto
+    try {
+      organizations = await dattoApi.getOrganizations();
+      globalStats = await dattoApi.getGlobalStats();
+      
+      // Formata os dados para o template
+      organizations = organizations.map(org => ({
+        id: org.uid,
+        name: org.name,
+        description: org.description || 'Sem descrição',
+        is_active: org.status === 'active',
+        last_sync: new Date().toISOString(),
+        total_devices: 0, // Será calculado individualmente
+        online_devices: 0,
+        total_alerts: 0,
+        critical_alerts: 0
+      }));
+
+      // Calcula estatísticas para cada organização
+      for (let org of organizations) {
+        try {
+          const stats = await dattoApi.getOrganizationStats(org.uid);
+          org.total_devices = stats.total_devices;
+          org.online_devices = stats.online_devices;
+          org.total_alerts = stats.total_alerts;
+          org.critical_alerts = stats.critical_alerts;
+        } catch (error) {
+          console.error(`Erro ao obter stats da org ${org.uid}:`, error.message);
+        }
+      }
+    } catch (error) {
+      console.log('Usando dados simulados devido a erro na API:', error.message);
+      // Fallback para dados simulados
+      organizations = await organizationService.getOrganizations();
+      globalStats = await dbService.getGlobalStats();
+    }
     
     res.render('dashboard', {
       organizations,
@@ -180,17 +98,54 @@ app.get('/', async (req, res) => {
 
 app.get('/organization/:id', async (req, res) => {
   try {
-    const organizationId = parseInt(req.params.id);
-    const organization = await organizationService.getOrganization(organizationId);
+    const organizationId = req.params.id;
+    let organization, devices, alerts, stats;
+
+    // Tenta obter dados reais da Datto
+    try {
+      organization = await dattoApi.getOrganization(organizationId);
+      devices = await dattoApi.getDevices(organizationId);
+      alerts = await dattoApi.getAlerts(organizationId);
+      stats = await dattoApi.getOrganizationStats(organizationId);
+
+      // Formata os dados para o template
+      organization = {
+        id: organization.uid,
+        name: organization.name,
+        description: organization.description || 'Sem descrição',
+        is_active: organization.status === 'active'
+      };
+
+      devices = devices.map(device => ({
+        name: device.name,
+        type: device.type || 'unknown',
+        status: device.status || 'offline',
+        os: device.os || 'Unknown',
+        ip_address: device.ip_address || 'N/A',
+        site_name: device.site_name || 'N/A'
+      }));
+
+      alerts = alerts.map(alert => ({
+        title: alert.title,
+        severity: alert.severity || 'info',
+        status: alert.status || 'active',
+        device_name: alert.device_name || 'N/A',
+        site_name: alert.site_name || 'N/A',
+        created_at: alert.created_at || new Date().toISOString()
+      }));
+    } catch (error) {
+      console.log('Usando dados simulados devido a erro na API:', error.message);
+      // Fallback para dados simulados
+      organization = await organizationService.getOrganization(parseInt(organizationId));
+      devices = await dbService.getDevices(parseInt(organizationId));
+      alerts = await dbService.getAlerts(parseInt(organizationId));
+      stats = await dbService.getGeneralStats(parseInt(organizationId));
+    }
     
     if (!organization) {
       return res.status(404).render('error', { error: 'Organização não encontrada' });
     }
 
-    const devices = await dbService.getDevices(organizationId);
-    const alerts = await dbService.getAlerts(organizationId);
-    const stats = await dbService.getGeneralStats(organizationId);
-    
     res.render('organization', {
       organization,
       devices,
@@ -206,8 +161,16 @@ app.get('/organization/:id', async (req, res) => {
 
 app.post('/organization/:id/sync', async (req, res) => {
   try {
-    const organizationId = parseInt(req.params.id);
-    const result = await syncService.syncOrganization(organizationId);
+    const organizationId = req.params.id;
+    let result;
+
+    // Tenta sincronizar com a API real
+    try {
+      result = await dattoApi.syncOrganization(organizationId);
+    } catch (error) {
+      console.log('Usando sincronização simulada devido a erro na API:', error.message);
+      result = await syncService.syncOrganization(parseInt(organizationId));
+    }
     
     res.json({ success: true, result });
   } catch (error) {
@@ -218,7 +181,12 @@ app.post('/organization/:id/sync', async (req, res) => {
 
 app.get('/api/organizations', async (req, res) => {
   try {
-    const organizations = await organizationService.getOrganizations();
+    let organizations;
+    try {
+      organizations = await dattoApi.getOrganizations();
+    } catch (error) {
+      organizations = await organizationService.getOrganizations();
+    }
     res.json(organizations);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -227,8 +195,13 @@ app.get('/api/organizations', async (req, res) => {
 
 app.get('/api/organization/:id/stats', async (req, res) => {
   try {
-    const organizationId = parseInt(req.params.id);
-    const stats = await dbService.getGeneralStats(organizationId);
+    const organizationId = req.params.id;
+    let stats;
+    try {
+      stats = await dattoApi.getOrganizationStats(organizationId);
+    } catch (error) {
+      stats = await dbService.getGeneralStats(parseInt(organizationId));
+    }
     res.json(stats);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -247,6 +220,9 @@ app.listen(PORT, () => {
   console.log(`🚀 Servidor web rodando em http://localhost:${PORT}`);
   console.log(`📊 Dashboard multitenancy disponível`);
   console.log(`🎨 Exemplo de ícones: http://localhost:${PORT}/icons`);
+  
+  // Testa conexão com Datto API
+  testDattoConnection();
 });
 
 module.exports = app;
