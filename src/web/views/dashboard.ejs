@@ -1,0 +1,241 @@
+<div class="fade-in">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">Dashboard Multitenancy</h1>
+        <p class="mt-2 text-gray-600">Visão geral de todas as organizações</p>
+    </div>
+
+    <!-- Estatísticas Globais -->
+    <div class="mb-8">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Estatísticas Globais</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="metric-card">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <div class="metric-value"><%= (globalStats && globalStats.total_organizations) || 0 %></div>
+                        <div class="metric-label">Organizações</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <div class="metric-value"><%= (globalStats && globalStats.total_devices) || 0 %></div>
+                        <div class="metric-label">Dispositivos</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <div class="metric-value"><%= (globalStats && globalStats.total_alerts) || 0 %></div>
+                        <div class="metric-label">Alertas</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <div class="metric-value"><%= (globalStats && globalStats.total_users) || 0 %></div>
+                        <div class="metric-label">Usuários</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Organizações -->
+    <div class="mb-8">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold text-gray-900">Organizações</h2>
+            <button class="btn-primary">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                Nova Organização
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <% (organizations || []).forEach(function(org) { %>
+            <div class="card slide-up">
+                <div class="card-header">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900"><%= org.name %></h3>
+                            <p class="text-sm text-gray-500 mt-1"><%= org.description %></p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="status-badge <%= org.is_active ? 'status-online' : 'status-inactive' %>">
+                                <%= org.is_active ? 'Ativo' : 'Inativo' %>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4" data-stats-org="<%= org.id %>">
+                    <div class="metric-card">
+                        <div class="metric-value"><%= org.total_devices || 0 %></div>
+                        <div class="metric-label">Dispositivos</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value"><%= org.online_devices || 0 %></div>
+                        <div class="metric-label">Online</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value"><%= org.total_alerts || 0 %></div>
+                        <div class="metric-label">Alertas</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value"><%= org.critical_alerts || 0 %></div>
+                        <div class="metric-label">Críticos</div>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center">
+                    <div class="text-sm text-gray-500">
+                        Última sincronização: <%= new Date(org.last_sync).toLocaleString('pt-BR') %>
+                    </div>
+                    <div class="flex space-x-2">
+                        <a href="/organization/<%= org.id %>" class="btn-secondary">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            </svg>
+                            Ver Detalhes
+                        </a>
+                        <button class="btn-primary" data-sync-org="<%= org.id %>" onclick="syncOrganization(<%= org.id %>)">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                            Sincronizar
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <% }); %>
+        </div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="text-lg font-semibold text-gray-900">Status dos Dispositivos</h3>
+            </div>
+            <div class="h-64">
+                <canvas id="devicesChart"></canvas>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="text-lg font-semibold text-gray-900">Alertas por Severidade</h3>
+            </div>
+            <div class="h-64">
+                <canvas id="alertsChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Gráfico de dispositivos
+const devicesCtx = document.getElementById('devicesChart').getContext('2d');
+const devicesChart = new Chart(devicesCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Online', 'Offline', 'Inativo'],
+        datasets: [{
+            data: [
+                <%= organizations.reduce((sum, org) => sum + (org.online_devices || 0), 0) %>,
+                <%= organizations.reduce((sum, org) => sum + (org.offline_devices || 0), 0) %>,
+                <%= organizations.reduce((sum, org) => sum + ((org.total_devices || 0) - (org.online_devices || 0) - (org.offline_devices || 0)), 0) %>
+            ],
+            backgroundColor: [
+                '#10B981',
+                '#EF4444',
+                '#6B7280'
+            ],
+            borderWidth: 0
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// Gráfico de alertas
+const alertsCtx = document.getElementById('alertsChart').getContext('2d');
+const alertsChart = new Chart(alertsCtx, {
+    type: 'bar',
+    data: {
+        labels: ['Críticos', 'Avisos', 'Info'],
+        datasets: [{
+            label: 'Alertas',
+            data: [
+                <%= organizations.reduce((sum, org) => sum + (org.critical_alerts || 0), 0) %>,
+                <%= organizations.reduce((sum, org) => sum + (org.warning_alerts || 0), 0) %>,
+                <%= organizations.reduce((sum, org) => sum + (org.info_alerts || 0), 0) %>
+            ],
+            backgroundColor: [
+                '#EF4444',
+                '#F59E0B',
+                '#3B82F6'
+            ],
+            borderRadius: 4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+</script>

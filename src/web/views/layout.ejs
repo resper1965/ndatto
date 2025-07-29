@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link href="/css/style.css" rel="stylesheet">
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-50">
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <h1 class="text-xl font-bold text-primary-600">Datto RMM</h1>
+                    </div>
+                    <div class="hidden md:block ml-10">
+                        <div class="flex items-baseline space-x-4">
+                            <a href="/" class="text-gray-900 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">Dashboard</a>
+                            <a href="/organizations" class="text-gray-500 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">Organizações</a>
+                            <a href="/sync" class="text-gray-500 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">Sincronização</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <div class="flex items-center space-x-4">
+                        <span class="text-sm text-gray-500">Admin</span>
+                        <div class="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center">
+                            <span class="text-white text-sm font-medium">A</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <%- body %>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-12">
+        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center">
+                <div class="text-sm text-gray-500">
+                    © 2024 Datto RMM Multitenancy. Todos os direitos reservados.
+                </div>
+                <div class="flex space-x-6">
+                    <span class="text-sm text-gray-500">v1.0.0</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script>
+        // Função para formatar números
+        function formatNumber(num) {
+            return new Intl.NumberFormat('pt-BR').format(num);
+        }
+
+        // Função para formatar data
+        function formatDate(date) {
+            return new Intl.DateTimeFormat('pt-BR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            }).format(new Date(date));
+        }
+
+        // Função para sincronizar organização
+        async function syncOrganization(orgId) {
+            const button = document.querySelector(`[data-sync-org="${orgId}"]`);
+            const originalText = button.innerHTML;
+            
+            try {
+                button.innerHTML = '<div class="loading-spinner"></div> Sincronizando...';
+                button.disabled = true;
+                
+                const response = await fetch(`/organization/${orgId}/sync`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    button.innerHTML = '✅ Sincronizado';
+                    setTimeout(() => {
+                        button.innerHTML = originalText;
+                        button.disabled = false;
+                    }, 2000);
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                console.error('Erro na sincronização:', error);
+                button.innerHTML = '❌ Erro';
+                button.classList.add('btn-danger');
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.disabled = false;
+                    button.classList.remove('btn-danger');
+                }, 3000);
+            }
+        }
+
+        // Função para atualizar estatísticas em tempo real
+        function updateStats(orgId) {
+            fetch(`/api/organization/${orgId}/stats`)
+                .then(response => response.json())
+                .then(stats => {
+                    const statsElement = document.querySelector(`[data-stats-org="${orgId}"]`);
+                    if (statsElement) {
+                        statsElement.innerHTML = `
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div class="metric-card">
+                                    <div class="metric-value">${formatNumber(stats.total_devices || 0)}</div>
+                                    <div class="metric-label">Dispositivos</div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-value">${formatNumber(stats.online_devices || 0)}</div>
+                                    <div class="metric-label">Online</div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-value">${formatNumber(stats.total_alerts || 0)}</div>
+                                    <div class="metric-label">Alertas</div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-value">${formatNumber(stats.critical_alerts || 0)}</div>
+                                    <div class="metric-label">Críticos</div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => console.error('Erro ao atualizar estatísticas:', error));
+        }
+
+        // Atualiza estatísticas a cada 30 segundos
+        setInterval(() => {
+            document.querySelectorAll('[data-stats-org]').forEach(element => {
+                const orgId = element.getAttribute('data-stats-org');
+                updateStats(orgId);
+            });
+        }, 30000);
+    </script>
+</body>
+</html>

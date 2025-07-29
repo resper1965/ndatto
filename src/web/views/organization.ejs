@@ -1,0 +1,203 @@
+<div class="fade-in">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900"><%= organization.name %></h1>
+                <p class="mt-2 text-gray-600"><%= organization.description %></p>
+            </div>
+            <div class="flex items-center space-x-3">
+                <span class="status-badge <%= organization.is_active ? 'status-online' : 'status-inactive' %>">
+                    <%= organization.is_active ? 'Ativo' : 'Inativo' %>
+                </span>
+                <button 
+                    class="btn-primary"
+                    data-sync-org="<%= organization.id %>"
+                    onclick="syncOrganization(<%= organization.id %>)"
+                >
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    Sincronizar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estatísticas da Organização -->
+    <div class="mb-8">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Estatísticas</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" data-stats-org="<%= organization.id %>">
+            <div class="metric-card">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <div class="metric-value"><%= stats.total_devices || 0 %></div>
+                        <div class="metric-label">Dispositivos</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <div class="metric-value"><%= stats.online_devices || 0 %></div>
+                        <div class="metric-label">Online</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <div class="metric-value"><%= stats.total_alerts || 0 %></div>
+                        <div class="metric-label">Alertas</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <div class="metric-value"><%= stats.critical_alerts || 0 %></div>
+                        <div class="metric-label">Críticos</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="mb-8">
+        <div class="border-b border-gray-200">
+            <nav class="-mb-px flex space-x-8">
+                <button class="border-primary-500 text-primary-600 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm" onclick="showTab('devices')">
+                    Dispositivos (<%= devices.length %>)
+                </button>
+                <button class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm" onclick="showTab('alerts')">
+                    Alertas (<%= alerts.length %>)
+                </button>
+            </nav>
+        </div>
+
+        <!-- Tab Content -->
+        <div id="devices-tab" class="tab-content">
+            <div class="table-container">
+                <table class="table">
+                    <thead class="table-header">
+                        <tr>
+                            <th>Nome</th>
+                            <th>Tipo</th>
+                            <th>Status</th>
+                            <th>Sistema Operacional</th>
+                            <th>IP</th>
+                            <th>Site</th>
+                        </tr>
+                    </thead>
+                    <tbody class="table-body">
+                        <% devices.forEach(function(device) { %>
+                        <tr>
+                            <td><%= device.name %></td>
+                            <td><%= device.type %></td>
+                            <td>
+                                <span class="status-badge <%= device.status === 'online' ? 'status-online' : 'status-offline' %>">
+                                    <%= device.status === 'online' ? 'Online' : 'Offline' %>
+                                </span>
+                            </td>
+                            <td><%= device.os %></td>
+                            <td><%= device.ip_address %></td>
+                            <td><%= device.site_name %></td>
+                        </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="alerts-tab" class="tab-content" style="display: none;">
+            <div class="table-container">
+                <table class="table">
+                    <thead class="table-header">
+                        <tr>
+                            <th>Título</th>
+                            <th>Severidade</th>
+                            <th>Status</th>
+                            <th>Dispositivo</th>
+                            <th>Site</th>
+                            <th>Data</th>
+                        </tr>
+                    </thead>
+                    <tbody class="table-body">
+                        <% alerts.forEach(function(alert) { %>
+                        <tr>
+                            <td><%= alert.title %></td>
+                            <td>
+                                <span class="severity-<%= alert.severity %>">
+                                    <%= alert.severity.charAt(0).toUpperCase() + alert.severity.slice(1) %>
+                                </span>
+                            </td>
+                            <td>
+                                <span class="status-badge <%= alert.status === 'active' ? 'status-online' : 'status-inactive' %>">
+                                    <%= alert.status === 'active' ? 'Ativo' : 'Resolvido' %>
+                                </span>
+                            </td>
+                            <td><%= alert.device_name %></td>
+                            <td><%= alert.site_name %></td>
+                            <td><%= new Date(alert.created_at).toLocaleString('pt-BR') %></td>
+                        </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showTab(tabName) {
+    // Esconde todas as tabs
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.style.display = 'none';
+    });
+    
+    // Remove classes ativas de todos os botões
+    document.querySelectorAll('nav button').forEach(btn => {
+        btn.classList.remove('border-primary-500', 'text-primary-600');
+        btn.classList.add('border-transparent', 'text-gray-500');
+    });
+    
+    // Mostra a tab selecionada
+    document.getElementById(tabName + '-tab').style.display = 'block';
+    
+    // Ativa o botão selecionado
+    event.target.classList.remove('border-transparent', 'text-gray-500');
+    event.target.classList.add('border-primary-500', 'text-primary-600');
+}
+</script>
